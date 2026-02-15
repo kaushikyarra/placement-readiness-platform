@@ -746,6 +746,29 @@
                     </svg>
                     <span class="nav-text">Profile</span>
                 </a>
+                <a class="nav-item" onclick="showPage('jd-analyzer')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    <span class="nav-text">JD Analyzer</span>
+                </a>
+                <a class="nav-item" onclick="showPage('results')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
+                    </svg>
+                    <span class="nav-text">Results</span>
+                </a>
+                <a class="nav-item" onclick="showPage('history')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="nav-text">History</span>
+                </a>
             </nav>
         </aside>
 
@@ -1001,7 +1024,57 @@
                             <label class="form-label">Target Company</label>
                             <input type="text" class="form-input" placeholder="Enter target company">
                         </div>
-                        <button class="btn btn-primary">Save Changes</button>
+                    </div>
+                </div>
+
+                <!-- JD Analyzer Page -->
+                <div id="jd-analyzer" class="page-content">
+                    <div class="card">
+                        <h2>JD Analyzer</h2>
+                        <p>Analyze job descriptions to get personalized preparation insights</p>
+                        <form id="jd-form" onsubmit="analyzeJD(event)">
+                            <div class="form-group">
+                                <label class="form-label">Company Name (Optional)</label>
+                                <input type="text" id="company-input" class="form-input"
+                                    placeholder="e.g., Google, Microsoft">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Role/Position (Optional)</label>
+                                <input type="text" id="role-input" class="form-input"
+                                    placeholder="e.g., Software Engineer, Data Analyst">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Job Description *</label>
+                                <textarea id="jd-input" class="form-input" rows="10"
+                                    placeholder="Paste the job description here..." required
+                                    style="resize: vertical; min-height: 200px;"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Analyze JD</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Results Page -->
+                <div id="results" class="page-content">
+                    <div id="results-content">
+                        <div class="card" style="text-align: center; padding: 60px 32px;">
+                            <h2>No Analysis Yet</h2>
+                            <p>Analyze a job description to see results here</p>
+                            <button class="btn btn-primary" onclick="showPage('jd-analyzer')"
+                                style="margin-top: 20px;">Analyze JD</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Page -->
+                <div id="history" class="page-content">
+                    <div class="card">
+                        <h2>Analysis History</h2>
+                        <p>View your past JD analyses</p>
+                        <div id="history-list">
+                            <p style="text-align: center; padding: 40px 0; color: var(--gray-600);">No history yet.
+                                Analyze a JD to get started!</p>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -1009,6 +1082,7 @@
     </div>
 
     <script>
+        // ===== NAVIGATION =====
         function showDashboard() {
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('dashboard').classList.add('active');
@@ -1019,20 +1093,412 @@
         }
 
         function showPage(pageId) {
-            // Hide all pages
             const pages = document.querySelectorAll('.page-content');
             pages.forEach(page => page.classList.remove('active'));
 
-            // Remove active class from all nav items
             const navItems = document.querySelectorAll('.nav-item');
             navItems.forEach(item => item.classList.remove('active'));
 
-            // Show selected page
             document.getElementById(pageId).classList.add('active');
-
-            // Add active class to clicked nav item
             event.target.closest('.nav-item').classList.add('active');
+
+            // Load history if navigating to history page
+            if (pageId === 'history') {
+                loadHistory();
+            }
+
+            // Load latest results if navigating to results page
+            if (pageId === 'results') {
+                const latest = JSON.parse(localStorage.getItem('latestAnalysis') || 'null');
+                if (latest) {
+                    displayResults(latest);
+                }
+            }
         }
+
+        // ===== SKILL EXTRACTION =====
+        const skillCategories = {
+            'Core CS': ['DSA', 'OOP', 'DBMS', 'OS', 'Networks', 'Data Structures', 'Algorithms'],
+            'Languages': ['Java', 'Python', 'JavaScript', 'TypeScript', 'C++', 'C#', 'Go', 'C ', 'Rust', 'Kotlin', 'Swift'],
+            'Web': ['React', 'Next.js', 'Node.js', 'Express', 'REST', 'GraphQL', 'Angular', 'Vue', 'HTML', 'CSS'],
+            'Data': ['SQL', 'MongoDB', 'PostgreSQL', 'MySQL', 'Redis', 'NoSQL', 'Database'],
+            'Cloud/DevOps': ['AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'CI/CD', 'Linux', 'Jenkins', 'Git'],
+            'Testing': ['Selenium', 'Cypress', 'Playwright', 'JUnit', 'PyTest', 'Jest', 'Testing']
+        };
+
+        function extractSkills(jdText) {
+            const extracted = {};
+            const jdLower = jdText.toLowerCase();
+
+            for (const [category, skills] of Object.entries(skillCategories)) {
+                const found = skills.filter(skill => {
+                    const skillLower = skill.toLowerCase();
+                    return jdLower.includes(skillLower);
+                });
+
+                if (found.length > 0) {
+                    extracted[category] = found;
+                }
+            }
+
+            return extracted;
+        }
+
+        // ===== READINESS SCORE =====
+        function calculateReadiness(company, role, jdText, extractedSkills) {
+            let score = 35;
+
+            const categoryCount = Object.keys(extractedSkills).length;
+            score += Math.min(categoryCount * 5, 30);
+
+            if (company && company.trim()) score += 10;
+            if (role && role.trim()) score += 10;
+            if (jdText.length > 800) score += 10;
+
+            return Math.min(score, 100);
+        }
+
+        // ===== CONTENT GENERATORS =====
+        function generateChecklist(skills) {
+            const checklist = {
+                'Round 1: Aptitude / Basics': [
+                    'Practice quantitative aptitude questions',
+                    'Brush up on logical reasoning',
+                    'Review basic mathematics and probability',
+                    'Practice verbal ability and comprehension',
+                    'Take mock aptitude tests'
+                ],
+                'Round 2: DSA + Core CS': []
+            };
+
+            if (skills['Core CS']) {
+                checklist['Round 2: DSA + Core CS'].push('Master data structures (Arrays, LinkedLists, Trees, Graphs)');
+                checklist['Round 2: DSA + Core CS'].push('Practice sorting and searching algorithms');
+                if (skills['Core CS'].some(s => s.toLowerCase().includes('oop'))) {
+                    checklist['Round 2: DSA + Core CS'].push('Review OOP concepts and design patterns');
+                }
+                if (skills['Core CS'].some(s => s.toLowerCase().includes('dbms'))) {
+                    checklist['Round 2: DSA + Core CS'].push('Study DBMS concepts and normalization');
+                }
+                if (skills['Core CS'].some(s => s.toLowerCase().includes('os'))) {
+                    checklist['Round 2: DSA + Core CS'].push('Understand OS concepts (processes, threads, memory)');
+                }
+                if (skills['Core CS'].some(s => s.toLowerCase().includes('network'))) {
+                    checklist['Round 2: DSA + Core CS'].push('Learn networking fundamentals (TCP/IP, HTTP)');
+                }
+            } else {
+                checklist['Round 2: DSA + Core CS'] = [
+                    'Master basic data structures',
+                    'Practice common algorithms',
+                    'Review core CS fundamentals',
+                    'Solve coding problems on LeetCode/HackerRank'
+                ];
+            }
+
+            checklist['Round 3: Tech Interview (Projects + Stack)'] = [];
+            if (skills['Languages']) {
+                checklist['Round 3: Tech Interview (Projects + Stack)'].push(`Master ${skills['Languages'].slice(0, 2).join(' and ')}`);
+            }
+            if (skills['Web']) {
+                checklist['Round 3: Tech Interview (Projects + Stack)'].push(`Build projects using ${skills['Web'].slice(0, 2).join(' and ')}`);
+            }
+            if (skills['Data']) {
+                checklist['Round 3: Tech Interview (Projects + Stack)'].push(`Practice database queries and design`);
+            }
+            if (skills['Cloud/DevOps']) {
+                checklist['Round 3: Tech Interview (Projects + Stack)'].push(`Learn ${skills['Cloud/DevOps'].slice(0, 2).join(' and ')} basics`);
+            }
+            checklist['Round 3: Tech Interview (Projects + Stack)'].push('Prepare to explain your projects in detail');
+            checklist['Round 3: Tech Interview (Projects + Stack)'].push('Practice system design basics');
+            checklist['Round 3: Tech Interview (Projects + Stack)'].push('Review your resume thoroughly');
+
+            checklist['Round 4: Managerial / HR'] = [
+                'Prepare STAR format answers for behavioral questions',
+                'Research the company culture and values',
+                'Practice "Tell me about yourself"',
+                'Prepare questions to ask the interviewer',
+                'Prepare questions to ask the interviewer',
+                'Review your strengths and weaknesses',
+                'Practice salary negotiation strategies'
+            ];
+
+            return checklist;
+        }
+
+        function generate7DayPlan(skills) {
+            const plan = {
+                'Day 1-2: Basics + Core CS': [
+                    'Review fundamental CS concepts',
+                    'Practice basic coding problems'
+                ],
+                'Day 3-4: DSA + Coding Practice': [
+                    'Solve 10-15 DSA problems daily',
+                    'Focus on arrays, strings, and hashmaps'
+                ],
+                'Day 5: Projects + Resume': [
+                    'Update resume with relevant projects',
+                    'Prepare project explanations'
+                ],
+                'Day 6: Mock Interviews': [
+                    'Practice with peers or online platforms',
+                    'Record and review your responses'
+                ],
+                'Day 7: Revision + Weak Areas': [
+                    'Review notes and key concepts',
+                    'Focus on identified weak areas'
+                ]
+            };
+
+            if (skills['Core CS']) {
+                plan['Day 1-2: Basics + Core CS'].push('Deep dive into OOP, DBMS, OS, Networks');
+            }
+            if (skills['Web']) {
+                plan['Day 3-4: DSA + Coding Practice'].push(`Practice ${skills['Web'].slice(0, 2).join(' and ')} concepts`);
+            }
+            if (skills['Data']) {
+                plan['Day 5: Projects + Resume'].push('Practice SQL queries and database design');
+            }
+            if (skills['Cloud/DevOps']) {
+                plan['Day 5: Projects + Resume'].push(`Learn ${skills['Cloud/DevOps'][0]} basics`);
+            }
+
+            return plan;
+        }
+
+        function generateQuestions(skills) {
+            const questions = [];
+
+            if (skills['Core CS']) {
+                if (skills['Core CS'].some(s => s.toLowerCase().includes('dsa'))) {
+                    questions.push('How would you optimize search in sorted data?');
+                    questions.push('Explain the difference between BFS and DFS');
+                }
+                if (skills['Core CS'].some(s => s.toLowerCase().includes('oop'))) {
+                    questions.push('Explain polymorphism with a real-world example');
+                }
+                if (skills['Core CS'].some(s => s.toLowerCase().includes('dbms'))) {
+                    questions.push('Explain indexing and when it helps performance');
+                }
+                if (skills['Core CS'].some(s => s.toLowerCase().includes('os'))) {
+                    questions.push('What is the difference between process and thread?');
+                }
+            }
+
+            if (skills['Languages']) {
+                questions.push(`What are the key features of ${skills['Languages'][0]}?`);
+            }
+
+            if (skills['Web']) {
+                if (skills['Web'].some(s => s.toLowerCase().includes('react'))) {
+                    questions.push('Explain state management options in React');
+                    questions.push('What are React hooks and why use them?');
+                }
+                if (skills['Web'].some(s => s.toLowerCase().includes('node'))) {
+                    questions.push('How does Node.js handle asynchronous operations?');
+                }
+                if (skills['Web'].some(s => s.toLowerCase().includes('rest'))) {
+                    questions.push('What are RESTful API best practices?');
+                }
+            }
+
+            if (skills['Data']) {
+                questions.push('Explain ACID properties in databases');
+                questions.push('When would you use NoSQL over SQL?');
+            }
+
+            if (skills['Cloud/DevOps']) {
+                questions.push('Explain the benefits of containerization');
+                questions.push('What is CI/CD and why is it important?');
+            }
+
+            // Fill remaining with general questions
+            const general = [
+                'Describe a challenging project you worked on',
+                'How do you handle tight deadlines?',
+                'Explain a time you debugged a complex issue',
+                'What is your approach to learning new technologies?',
+                'How do you ensure code quality?'
+            ];
+
+            while (questions.length < 10) {
+                questions.push(general[questions.length % general.length]);
+            }
+
+            return questions.slice(0, 10);
+        }
+
+        // ===== ANALYZE JD =====
+        function analyzeJD(event) {
+            event.preventDefault();
+
+            const company = document.getElementById('company-input').value;
+            const role = document.getElementById('role-input').value;
+            const jdText = document.getElementById('jd-input').value;
+
+            const extractedSkills = extractSkills(jdText);
+            const hasSkills = Object.keys(extractedSkills).length > 0;
+
+            if (!hasSkills) {
+                extractedSkills['General'] = ['General fresher stack'];
+            }
+
+            const readinessScore = calculateReadiness(company, role, jdText, extractedSkills);
+            const checklist = generateChecklist(extractedSkills);
+            const plan = generate7DayPlan(extractedSkills);
+            const questions = generateQuestions(extractedSkills);
+
+            const analysis = {
+                id: Date.now(),
+                createdAt: new Date().toISOString(),
+                company: company || 'Not specified',
+                role: role || 'Not specified',
+                jdText,
+                extractedSkills,
+                checklist,
+                plan,
+                questions,
+                readinessScore
+            };
+
+            saveAnalysis(analysis);
+            displayResults(analysis);
+            showPage('results');
+        }
+
+        // ===== STORAGE =====
+        function saveAnalysis(analysis) {
+            const history = JSON.parse(localStorage.getItem('jdHistory') || '[]');
+            history.unshift(analysis);
+            localStorage.setItem('jdHistory', JSON.stringify(history));
+            localStorage.setItem('latestAnalysis', JSON.stringify(analysis));
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('jdHistory') || '[]');
+            const historyList = document.getElementById('history-list');
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; padding: 40px 0; color: var(--gray-600);">No history yet. Analyze a JD to get started!</p>';
+                return;
+            }
+
+            historyList.innerHTML = history.map(item => `
+                <div class="problem-item" onclick="viewHistoryItem(${item.id})" style="cursor: pointer;">
+                    <h3>${item.company} - ${item.role}</h3>
+                    <p>Score: ${item.readinessScore}/100 | ${new Date(item.createdAt).toLocaleDateString()}</p>
+                </div>
+            `).join('');
+        }
+
+        function viewHistoryItem(id) {
+            const history = JSON.parse(localStorage.getItem('jdHistory') || '[]');
+            const item = history.find(h => h.id === id);
+            if (item) {
+                displayResults(item);
+                showPage('results');
+            }
+        }
+
+        // ===== DISPLAY RESULTS =====
+        function displayResults(analysis) {
+            const circumference = 2 * Math.PI * 90;
+            const offset = circumference - (analysis.readinessScore / 100) * circumference;
+
+            const skillsHTML = Object.entries(analysis.extractedSkills).map(([category, skills]) => `
+                <div style="margin-bottom: 16px;">
+                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--gray-700);">${category}</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${skills.map(skill => `<span style="background-color: var(--primary-light); color: var(--primary); padding: 4px 12px; border-radius: 16px; font-size: 13px;">${skill}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            const checklistHTML = Object.entries(analysis.checklist).map(([round, items]) => `
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--gray-900);">${round}</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        ${items.map(item => `<li style="padding: 8px 0; padding-left: 24px; position: relative;">
+                            <span style="position: absolute; left: 0; color: var(--primary);">✓</span>
+                            ${item}
+                        </li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+
+            const planHTML = Object.entries(analysis.plan).map(([day, tasks]) => `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--primary);">${day}</h4>
+                    <ul style="list-style: disc; padding-left: 24px; color: var(--gray-700);">
+                        ${tasks.map(task => `<li style="margin-bottom: 6px;">${task}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+
+            const questionsHTML = analysis.questions.map((q, i) => `
+                <div style="padding: 12px; background-color: var(--gray-50); border-radius: 6px; margin-bottom: 10px;">
+                    <strong style="color: var(--primary);">${i + 1}.</strong> ${q}
+                </div>
+            `).join('');
+
+            document.getElementById('results-content').innerHTML = `
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Readiness Score</h3>
+                        <div class="readiness-container">
+                            <div class="circular-progress">
+                                <svg width="200" height="200">
+                                    <circle class="progress-circle-bg" cx="100" cy="100" r="90"></circle>
+                                    <circle class="progress-circle" cx="100" cy="100" r="90"
+                                        stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+                                </svg>
+                                <div class="progress-text">
+                                    <div class="progress-number">${analysis.readinessScore}</div>
+                                    <div class="progress-label">Readiness Score</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <p style="margin: 4px 0;"><strong>Company:</strong> ${analysis.company}</p>
+                            <p style="margin: 4px 0;"><strong>Role:</strong> ${analysis.role}</p>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Extracted Skills</h3>
+                        ${skillsHTML}
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>Round-wise Preparation Checklist</h3>
+                    ${checklistHTML}
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>7-Day Preparation Plan</h3>
+                        ${planHTML}
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Likely Interview Questions</h3>
+                        ${questionsHTML}
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 24px;">
+                    <button class="btn btn-primary" onclick="showPage('jd-analyzer')">Analyze Another JD</button>
+                </div>
+            `;
+        }
+
+        // Load latest results on page load if available
+        window.addEventListener('DOMContentLoaded', () => {
+            const latest = JSON.parse(localStorage.getItem('latestAnalysis') || 'null');
+            if (latest) {
+                displayResults(latest);
+            }
+        });
     </script>
 </body>
 
