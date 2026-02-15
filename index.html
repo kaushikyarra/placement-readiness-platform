@@ -625,6 +625,130 @@
             color: var(--gray-600);
         }
 
+        /* Interactive Skill Toggles */
+        .skill-tag {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .skill-tag.know {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .skill-tag.practice {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .skill-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .skill-icon {
+            font-size: 12px;
+        }
+
+        /* Export Buttons */
+        .export-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background-color: var(--gray-200);
+            color: var(--gray-900);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--gray-300);
+        }
+
+        /* Action Next Box */
+        .action-next {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 12px;
+            margin-top: 32px;
+        }
+
+        .action-next h3 {
+            margin: 0 0 16px 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .action-next h4 {
+            margin: 16px 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .action-next ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+
+        .action-next li {
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            font-size: 15px;
+        }
+
+        .action-next li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            font-size: 20px;
+        }
+
+        .action-next .suggestion {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            background-color: var(--gray-900);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 40px;
@@ -1400,15 +1524,38 @@
         }
 
         // ===== DISPLAY RESULTS =====
+        let currentAnalysis = null; // Track current analysis for updates
+
         function displayResults(analysis) {
+            currentAnalysis = analysis;
+
+            // Initialize skillConfidenceMap if not exists
+            if (!analysis.skillConfidenceMap) {
+                analysis.skillConfidenceMap = {};
+                // Default all skills to "practice"
+                Object.values(analysis.extractedSkills).flat().forEach(skill => {
+                    analysis.skillConfidenceMap[skill] = 'practice';
+                });
+            }
+
+            // Calculate adjusted score
+            updateAdjustedScore(analysis);
+
+            const displayScore = analysis.adjustedReadinessScore || analysis.readinessScore;
             const circumference = 2 * Math.PI * 90;
-            const offset = circumference - (analysis.readinessScore / 100) * circumference;
+            const offset = circumference - (displayScore / 100) * circumference;
 
             const skillsHTML = Object.entries(analysis.extractedSkills).map(([category, skills]) => `
                 <div style="margin-bottom: 16px;">
                     <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--gray-700);">${category}</h4>
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        ${skills.map(skill => `<span style="background-color: var(--primary-light); color: var(--primary); padding: 4px 12px; border-radius: 16px; font-size: 13px;">${skill}</span>`).join('')}
+                        ${skills.map(skill => {
+                const confidence = analysis.skillConfidenceMap[skill] || 'practice';
+                const icon = confidence === 'know' ? '✓' : '⚡';
+                return `<span class="skill-tag ${confidence}" onclick="toggleSkillConfidence('${skill}')" title="Click to toggle">
+                                <span class="skill-icon">${icon}</span>${skill}
+                            </span>`;
+            }).join('')}
                     </div>
                 </div>
             `).join('');
@@ -1440,6 +1587,25 @@
                 </div>
             `).join('');
 
+            // Get weak skills for Action Next
+            const weakSkills = Object.entries(analysis.skillConfidenceMap)
+                .filter(([skill, confidence]) => confidence === 'practice')
+                .map(([skill]) => skill)
+                .slice(0, 3);
+
+            const actionNextHTML = weakSkills.length > 0 ? `
+                <div class="action-next">
+                    <h3>🎯 Action Next</h3>
+                    <h4>Focus Areas:</h4>
+                    <ul>
+                        ${weakSkills.map(skill => `<li>${skill} (Need practice)</li>`).join('')}
+                    </ul>
+                    <div class="suggestion">
+                        <strong>Suggested Action:</strong> Start Day 1 plan now - Review fundamental CS concepts and practice basic coding problems.
+                    </div>
+                </div>
+            ` : '';
+
             document.getElementById('results-content').innerHTML = `
                 <div class="dashboard-grid">
                     <div class="dashboard-card">
@@ -1452,7 +1618,7 @@
                                         stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
                                 </svg>
                                 <div class="progress-text">
-                                    <div class="progress-number">${analysis.readinessScore}</div>
+                                    <div class="progress-number">${displayScore}</div>
                                     <div class="progress-label">Readiness Score</div>
                                 </div>
                             </div>
@@ -1460,11 +1626,13 @@
                         <div style="margin-top: 20px; text-align: center;">
                             <p style="margin: 4px 0;"><strong>Company:</strong> ${analysis.company}</p>
                             <p style="margin: 4px 0;"><strong>Role:</strong> ${analysis.role}</p>
+                            <p style="margin: 4px 0; font-size: 12px; color: var(--gray-600);">Base: ${analysis.readinessScore} | Adjusted: ${displayScore}</p>
                         </div>
                     </div>
 
                     <div class="dashboard-card">
                         <h3>Extracted Skills</h3>
+                        <p style="font-size: 13px; color: var(--gray-600); margin-bottom: 16px;">Click skills to toggle: <span style="color: #10b981;">✓ I know this</span> / <span style="color: #f59e0b;">⚡ Need practice</span></p>
                         ${skillsHTML}
                     </div>
                 </div>
@@ -1472,24 +1640,184 @@
                 <div class="dashboard-card">
                     <h3>Round-wise Preparation Checklist</h3>
                     ${checklistHTML}
+                    <div class="export-buttons">
+                        <button class="btn btn-secondary" onclick="copyChecklist()">📋 Copy Checklist</button>
+                    </div>
                 </div>
 
                 <div class="dashboard-grid">
                     <div class="dashboard-card">
                         <h3>7-Day Preparation Plan</h3>
                         ${planHTML}
+                        <div class="export-buttons">
+                            <button class="btn btn-secondary" onclick="copyPlan()">📅 Copy Plan</button>
+                        </div>
                     </div>
 
                     <div class="dashboard-card">
                         <h3>Likely Interview Questions</h3>
                         ${questionsHTML}
+                        <div class="export-buttons">
+                            <button class="btn btn-secondary" onclick="copyQuestions()">❓ Copy Questions</button>
+                        </div>
                     </div>
                 </div>
 
                 <div style="text-align: center; margin-top: 24px;">
                     <button class="btn btn-primary" onclick="showPage('jd-analyzer')">Analyze Another JD</button>
+                    <button class="btn btn-secondary" onclick="downloadTXT()" style="margin-left: 12px;">💾 Download as TXT</button>
                 </div>
+
+                ${actionNextHTML}
             `;
+        }
+
+        // ===== INTERACTIVE FEATURES =====
+        function toggleSkillConfidence(skill) {
+            if (!currentAnalysis) return;
+
+            const current = currentAnalysis.skillConfidenceMap[skill] || 'practice';
+            currentAnalysis.skillConfidenceMap[skill] = current === 'practice' ? 'know' : 'practice';
+
+            updateAdjustedScore(currentAnalysis);
+            saveAnalysisChanges(currentAnalysis);
+            displayResults(currentAnalysis);
+        }
+
+        function updateAdjustedScore(analysis) {
+            let adjusted = analysis.readinessScore;
+
+            for (const [skill, confidence] of Object.entries(analysis.skillConfidenceMap || {})) {
+                if (confidence === 'know') adjusted += 2;
+                else if (confidence === 'practice') adjusted -= 2;
+            }
+
+            analysis.adjustedReadinessScore = Math.max(0, Math.min(100, adjusted));
+        }
+
+        function saveAnalysisChanges(analysis) {
+            // Update in history
+            const history = JSON.parse(localStorage.getItem('jdHistory') || '[]');
+            const index = history.findIndex(h => h.id === analysis.id);
+            if (index !== -1) {
+                history[index] = analysis;
+                localStorage.setItem('jdHistory', JSON.stringify(history));
+            }
+
+            // Update latest
+            localStorage.setItem('latestAnalysis', JSON.stringify(analysis));
+        }
+
+        // ===== EXPORT FUNCTIONS =====
+        function copyPlan() {
+            if (!currentAnalysis) return;
+
+            let text = '7-DAY PREPARATION PLAN\n\n';
+            for (const [day, tasks] of Object.entries(currentAnalysis.plan)) {
+                text += `${day}\n`;
+                tasks.forEach(task => text += `  - ${task}\n`);
+                text += '\n';
+            }
+
+            copyToClipboard(text);
+        }
+
+        function copyChecklist() {
+            if (!currentAnalysis) return;
+
+            let text = 'ROUND-WISE PREPARATION CHECKLIST\n\n';
+            for (const [round, items] of Object.entries(currentAnalysis.checklist)) {
+                text += `${round}\n`;
+                items.forEach(item => text += `  ✓ ${item}\n`);
+                text += '\n';
+            }
+
+            copyToClipboard(text);
+        }
+
+        function copyQuestions() {
+            if (!currentAnalysis) return;
+
+            let text = 'LIKELY INTERVIEW QUESTIONS\n\n';
+            currentAnalysis.questions.forEach((q, i) => {
+                text += `${i + 1}. ${q}\n`;
+            });
+
+            copyToClipboard(text);
+        }
+
+        function downloadTXT() {
+            if (!currentAnalysis) return;
+
+            let content = `PLACEMENT PREPARATION REPORT\n`;
+            content += `Company: ${currentAnalysis.company}\n`;
+            content += `Role: ${currentAnalysis.role}\n`;
+            content += `Readiness Score: ${currentAnalysis.adjustedReadinessScore || currentAnalysis.readinessScore}/100\n`;
+            content += `Generated: ${new Date(currentAnalysis.createdAt).toLocaleString()}\n\n`;
+            content += `${'='.repeat(60)}\n\n`;
+
+            content += `EXTRACTED SKILLS\n\n`;
+            for (const [category, skills] of Object.entries(currentAnalysis.extractedSkills)) {
+                content += `${category}:\n`;
+                skills.forEach(skill => {
+                    const confidence = currentAnalysis.skillConfidenceMap[skill] || 'practice';
+                    const icon = confidence === 'know' ? '✓' : '⚡';
+                    content += `  ${icon} ${skill}\n`;
+                });
+                content += '\n';
+            }
+
+            content += `${'='.repeat(60)}\n\n`;
+            content += `ROUND-WISE PREPARATION CHECKLIST\n\n`;
+            for (const [round, items] of Object.entries(currentAnalysis.checklist)) {
+                content += `${round}\n`;
+                items.forEach(item => content += `  ✓ ${item}\n`);
+                content += '\n';
+            }
+
+            content += `${'='.repeat(60)}\n\n`;
+            content += `7-DAY PREPARATION PLAN\n\n`;
+            for (const [day, tasks] of Object.entries(currentAnalysis.plan)) {
+                content += `${day}\n`;
+                tasks.forEach(task => content += `  - ${task}\n`);
+                content += '\n';
+            }
+
+            content += `${'='.repeat(60)}\n\n`;
+            content += `LIKELY INTERVIEW QUESTIONS\n\n`;
+            currentAnalysis.questions.forEach((q, i) => {
+                content += `${i + 1}. ${q}\n`;
+            });
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const filename = `placement-prep-${currentAnalysis.company.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.txt`;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('Downloaded as TXT file!');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!');
+            }).catch(() => {
+                showToast('Failed to copy');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         }
 
         // Load latest results on page load if available
