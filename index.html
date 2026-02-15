@@ -750,6 +750,50 @@
             }
         }
 
+        /* Validation Styles */
+        .validation-error {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .validation-warning {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .char-counter {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        .char-counter.warning {
+            color: #f59e0b;
+            font-weight: 500;
+        }
+
+        .char-counter.valid {
+            color: #10b981;
+            font-weight: 500;
+        }
+
         /* Company Intel Card */
         .company-intel {
             background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
@@ -1314,9 +1358,19 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Job Description *</label>
+                                <div id="jd-error" class="validation-error" style="display: none;">
+                                    ❌ Job description is required to analyze.
+                                </div>
+                                <div id="jd-warning" class="validation-warning" style="display: none;">
+                                    ⚠️ This JD is too short to analyze deeply. Paste full JD for better output.
+                                </div>
                                 <textarea id="jd-input" class="form-input" rows="10"
                                     placeholder="Paste the job description here..." required
-                                    style="resize: vertical; min-height: 200px;"></textarea>
+                                    style="resize: vertical; min-height: 200px;"
+                                    oninput="updateCharCounter()"></textarea>
+                                <div class="char-counter" id="char-counter">
+                                    <span id="char-count">0</span> / 200 characters (minimum recommended)
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-primary">Analyze JD</button>
                         </form>
@@ -1385,6 +1439,54 @@
             }
         }
 
+        // ===== INPUT VALIDATION =====
+        function updateCharCounter() {
+            const jdInput = document.getElementById('jd-input');
+            const charCount = document.getElementById('char-count');
+            const charCounter = document.getElementById('char-counter');
+            const jdWarning = document.getElementById('jd-warning');
+
+            const length = jdInput.value.length;
+            charCount.textContent = length;
+
+            // Update counter color
+            charCounter.classList.remove('warning', 'valid');
+            if (length < 200 && length > 0) {
+                charCounter.classList.add('warning');
+            } else if (length >= 200) {
+                charCounter.classList.add('valid');
+            }
+
+            // Hide warning when typing
+            if (length >= 200) {
+                jdWarning.style.display = 'none';
+            }
+        }
+
+        function validateJDInput(jdText) {
+            const jdError = document.getElementById('jd-error');
+            const jdWarning = document.getElementById('jd-warning');
+
+            // Hide both messages initially
+            jdError.style.display = 'none';
+            jdWarning.style.display = 'none';
+
+            // Check if empty
+            if (!jdText || jdText.trim().length === 0) {
+                jdError.style.display = 'flex';
+                return false;
+            }
+
+            // Check if too short (warning only, allow proceed)
+            if (jdText.length < 200) {
+                jdWarning.textContent = "This JD is too short to analyze deeply. Paste full JD for better output.";
+                jdWarning.style.display = 'flex';
+                // Still return true to allow submission
+            }
+
+            return true;
+        }
+
         // ===== SKILL EXTRACTION =====
         const skillCategories = {
             'Core CS': ['DSA', 'OOP', 'DBMS', 'OS', 'Networks', 'Data Structures', 'Algorithms'],
@@ -1425,6 +1527,101 @@
             if (jdText.length > 800) score += 10;
 
             return Math.min(score, 100);
+        }
+
+        // ===== SCHEMA NORMALIZATION =====
+        function handleEmptySkills(extractedSkills) {
+            const hasSkills = Object.values(extractedSkills)
+                .some(arr => arr && arr.length > 0);
+
+            if (!hasSkills) {
+                extractedSkills["Other"] = [
+                    "Communication",
+                    "Problem solving",
+                    "Basic coding",
+                    "Projects"
+                ];
+            }
+
+            return extractedSkills;
+        }
+
+        function normalizeSkills(skills) {
+            const normalized = {
+                "Core CS": [],
+                "Languages": [],
+                "Web": [],
+                "Data": [],
+                "Cloud/DevOps": [],
+                "Testing": [],
+                "Other": []
+            };
+
+            if (!skills) return normalized;
+
+            // Copy existing skills
+            for (const [category, skillList] of Object.entries(skills)) {
+                if (normalized.hasOwnProperty(category)) {
+                    normalized[category] = Array.isArray(skillList) ? skillList : [];
+                } else {
+                    // Unknown categories go to "Other"
+                    normalized["Other"] = normalized["Other"].concat(Array.isArray(skillList) ? skillList : []);
+                }
+            }
+
+            return normalized;
+        }
+
+        function validateAndNormalizeEntry(entry) {
+            const now = new Date().toISOString();
+
+            // Fix plan structure if it's the old object format
+            let plan7Days = Array.isArray(entry.plan7Days || entry.plan) ? (entry.plan7Days || entry.plan) : [];
+            if (!Array.isArray(plan7Days) && typeof (entry.plan || entry.plan7Days) === 'object') {
+                // Convert old object format to new array format
+                const oldPlan = entry.plan || entry.plan7Days;
+                plan7Days = Object.entries(oldPlan).map(([key, tasks]) => {
+                    const parts = key.split(':');
+                    return {
+                        day: parts[0] ? parts[0].trim() : key,
+                        focus: parts[1] ? parts[1].trim() : '',
+                        tasks: Array.isArray(tasks) ? tasks : []
+                    };
+                });
+            }
+
+            // Fix checklist structure if it's the old object format
+            let checklist = Array.isArray(entry.checklist) ? entry.checklist : [];
+            if (!Array.isArray(checklist) && typeof entry.checklist === 'object') {
+                // Convert old object format to new array format
+                checklist = Object.entries(entry.checklist).map(([roundTitle, items]) => ({
+                    roundTitle,
+                    items: Array.isArray(items) ? items : []
+                }));
+            }
+
+            return {
+                id: entry.id || Date.now(),
+                createdAt: entry.createdAt || entry.timestamp || now,
+                updatedAt: entry.updatedAt || entry.createdAt || entry.timestamp || now,
+                company: entry.company || "",
+                role: entry.role || "",
+                jdText: entry.jdText || "",
+                extractedSkills: normalizeSkills(entry.extractedSkills),
+                // Keep companyIntel for display but strict schema implies we ensure required fields
+                companyIntel: entry.companyIntel || {
+                    size: "Startup (<200)",
+                    industry: "Technology Services",
+                    hiringFocus: []
+                },
+                roundMapping: Array.isArray(entry.roundMapping) ? entry.roundMapping : [],
+                checklist: checklist,
+                plan7Days: plan7Days,
+                questions: Array.isArray(entry.questions) ? entry.questions : [],
+                baseScore: typeof entry.baseScore === 'number' ? entry.baseScore : (entry.readinessScore || 0),
+                skillConfidenceMap: entry.skillConfidenceMap || {},
+                finalScore: typeof entry.finalScore === 'number' ? entry.finalScore : (entry.adjustedReadinessScore || entry.readinessScore || 0)
+            };
         }
 
         // ===== CONTENT GENERATORS =====
@@ -1565,8 +1762,8 @@
         }
 
         function generateChecklist(skills) {
-
-            const checklist = {
+            // Internal helper to build the structure
+            const checklistMap = {
                 'Round 1: Aptitude / Basics': [
                     'Practice quantitative aptitude questions',
                     'Brush up on logical reasoning',
@@ -1578,22 +1775,22 @@
             };
 
             if (skills['Core CS']) {
-                checklist['Round 2: DSA + Core CS'].push('Master data structures (Arrays, LinkedLists, Trees, Graphs)');
-                checklist['Round 2: DSA + Core CS'].push('Practice sorting and searching algorithms');
+                checklistMap['Round 2: DSA + Core CS'].push('Master data structures (Arrays, LinkedLists, Trees, Graphs)');
+                checklistMap['Round 2: DSA + Core CS'].push('Practice sorting and searching algorithms');
                 if (skills['Core CS'].some(s => s.toLowerCase().includes('oop'))) {
-                    checklist['Round 2: DSA + Core CS'].push('Review OOP concepts and design patterns');
+                    checklistMap['Round 2: DSA + Core CS'].push('Review OOP concepts and design patterns');
                 }
                 if (skills['Core CS'].some(s => s.toLowerCase().includes('dbms'))) {
-                    checklist['Round 2: DSA + Core CS'].push('Study DBMS concepts and normalization');
+                    checklistMap['Round 2: DSA + Core CS'].push('Study DBMS concepts and normalization');
                 }
                 if (skills['Core CS'].some(s => s.toLowerCase().includes('os'))) {
-                    checklist['Round 2: DSA + Core CS'].push('Understand OS concepts (processes, threads, memory)');
+                    checklistMap['Round 2: DSA + Core CS'].push('Understand OS concepts (processes, threads, memory)');
                 }
                 if (skills['Core CS'].some(s => s.toLowerCase().includes('network'))) {
-                    checklist['Round 2: DSA + Core CS'].push('Learn networking fundamentals (TCP/IP, HTTP)');
+                    checklistMap['Round 2: DSA + Core CS'].push('Learn networking fundamentals (TCP/IP, HTTP)');
                 }
             } else {
-                checklist['Round 2: DSA + Core CS'] = [
+                checklistMap['Round 2: DSA + Core CS'] = [
                     'Master basic data structures',
                     'Practice common algorithms',
                     'Review core CS fundamentals',
@@ -1601,38 +1798,46 @@
                 ];
             }
 
-            checklist['Round 3: Tech Interview (Projects + Stack)'] = [];
+            checklistMap['Round 3: Tech Interview (Projects + Stack)'] = [];
             if (skills['Languages']) {
-                checklist['Round 3: Tech Interview (Projects + Stack)'].push(`Master ${skills['Languages'].slice(0, 2).join(' and ')}`);
+                checklistMap['Round 3: Tech Interview (Projects + Stack)'].push(`Master ${skills['Languages'].slice(0, 2).join(' and ')}`);
             }
             if (skills['Web']) {
-                checklist['Round 3: Tech Interview (Projects + Stack)'].push(`Build projects using ${skills['Web'].slice(0, 2).join(' and ')}`);
+                checklistMap['Round 3: Tech Interview (Projects + Stack)'].push(`Build projects using ${skills['Web'].slice(0, 2).join(' and ')}`);
             }
             if (skills['Data']) {
-                checklist['Round 3: Tech Interview (Projects + Stack)'].push(`Practice database queries and design`);
+                checklistMap['Round 3: Tech Interview (Projects + Stack)'].push(`Practice database queries and design`);
             }
             if (skills['Cloud/DevOps']) {
-                checklist['Round 3: Tech Interview (Projects + Stack)'].push(`Learn ${skills['Cloud/DevOps'].slice(0, 2).join(' and ')} basics`);
+                checklistMap['Round 3: Tech Interview (Projects + Stack)'].push(`Learn ${skills['Cloud/DevOps'].slice(0, 2).join(' and ')} basics`);
             }
-            checklist['Round 3: Tech Interview (Projects + Stack)'].push('Prepare to explain your projects in detail');
-            checklist['Round 3: Tech Interview (Projects + Stack)'].push('Practice system design basics');
-            checklist['Round 3: Tech Interview (Projects + Stack)'].push('Review your resume thoroughly');
+            checklistMap['Round 3: Tech Interview (Projects + Stack)'].push('Prepare to explain your projects in detail');
+            checklistMap['Round 3: Tech Interview (Projects + Stack)'].push('Practice system design basics');
+            checklistMap['Round 3: Tech Interview (Projects + Stack)'].push('Review your resume thoroughly');
 
-            checklist['Round 4: Managerial / HR'] = [
+            checklistMap['Round 4: Managerial / HR'] = [
                 'Prepare STAR format answers for behavioral questions',
                 'Research the company culture and values',
                 'Practice "Tell me about yourself"',
-                'Prepare questions to ask the interviewer',
                 'Prepare questions to ask the interviewer',
                 'Review your strengths and weaknesses',
                 'Practice salary negotiation strategies'
             ];
 
-            return checklist;
+            if (skills['Other']) {
+                checklistMap['Round 4: Managerial / HR'].push('Prepare for situational questions (projects, conflicts, etc.)');
+                checklistMap['Round 4: Managerial / HR'].push('Practice explaining technical concepts to non-tech stakeholders');
+            }
+
+            // Convert to Array format
+            return Object.entries(checklistMap).map(([roundTitle, items]) => ({
+                roundTitle,
+                items
+            }));
         }
 
         function generate7DayPlan(skills) {
-            const plan = {
+            const planMap = {
                 'Day 1-2: Basics + Core CS': [
                     'Review fundamental CS concepts',
                     'Practice basic coding problems'
@@ -1656,19 +1861,31 @@
             };
 
             if (skills['Core CS']) {
-                plan['Day 1-2: Basics + Core CS'].push('Deep dive into OOP, DBMS, OS, Networks');
+                planMap['Day 1-2: Basics + Core CS'].push('Deep dive into OOP, DBMS, OS, Networks');
             }
             if (skills['Web']) {
-                plan['Day 3-4: DSA + Coding Practice'].push(`Practice ${skills['Web'].slice(0, 2).join(' and ')} concepts`);
+                planMap['Day 3-4: DSA + Coding Practice'].push(`Practice ${skills['Web'].slice(0, 2).join(' and ')} concepts`);
             }
             if (skills['Data']) {
-                plan['Day 5: Projects + Resume'].push('Practice SQL queries and database design');
+                planMap['Day 5: Projects + Resume'].push('Practice SQL queries and database design');
             }
             if (skills['Cloud/DevOps']) {
-                plan['Day 5: Projects + Resume'].push(`Learn ${skills['Cloud/DevOps'][0]} basics`);
+                planMap['Day 5: Projects + Resume'].push(`Learn ${skills['Cloud/DevOps'][0]} basics`);
+            }
+            if (skills['Other']) {
+                planMap['Day 6: Mock Interviews'].push('Focus on communication and behavioral questions');
+                planMap['Day 6: Mock Interviews'].push('Practice explaining your past projects clearly');
             }
 
-            return plan;
+            // Convert to Array format
+            return Object.entries(planMap).map(([key, tasks]) => {
+                const parts = key.split(':');
+                return {
+                    day: parts[0] ? parts[0].trim() : key,
+                    focus: parts[1] ? parts[1].trim() : '',
+                    tasks: tasks
+                };
+            });
         }
 
         function generateQuestions(skills) {
@@ -1717,6 +1934,14 @@
                 questions.push('What is CI/CD and why is it important?');
             }
 
+            // Handle "Other" category (soft skills, generic questions)
+            if (skills['Other']) {
+                questions.push('Describe a challenging project you worked on');
+                questions.push('How do you approach learning new technologies?');
+                questions.push('Explain a time you debugged a complex issue');
+                questions.push('How do you handle tight deadlines?');
+            }
+
             // Fill remaining with general questions
             const general = [
                 'Describe a challenging project you worked on',
@@ -1737,16 +1962,23 @@
         function analyzeJD(event) {
             event.preventDefault();
 
-            const company = document.getElementById('company-input').value;
-            const role = document.getElementById('role-input').value;
+            const company = document.getElementById('company-input').value.trim();
+            const role = document.getElementById('role-input').value.trim();
             const jdText = document.getElementById('jd-input').value;
 
-            const extractedSkills = extractSkills(jdText);
-            const hasSkills = Object.keys(extractedSkills).length > 0;
-
-            if (!hasSkills) {
-                extractedSkills['General'] = ['General fresher stack'];
+            // Validate JD input
+            if (!validateJDInput(jdText)) {
+                return; // Stop if validation fails
             }
+
+            // Extract skills
+            let extractedSkills = extractSkills(jdText);
+
+            // Handle empty skills
+            extractedSkills = handleEmptySkills(extractedSkills);
+
+            // Normalize skills to ensure all categories exist
+            extractedSkills = normalizeSkills(extractedSkills);
 
             const readinessScore = calculateReadiness(company, role, jdText, extractedSkills);
 
@@ -1758,14 +1990,16 @@
             // Generate Round Mapping
             const roundMapping = generateRoundMapping(companySize, extractedSkills);
 
+            const now = new Date().toISOString();
             const analysis = {
                 id: Date.now(),
-                timestamp: new Date().toISOString(),
-                company: company || 'Not specified',
-                role: role || 'Not specified',
+                createdAt: now,
+                updatedAt: now,
+                company: company || "",
+                role: role || "",
                 jdText,
                 extractedSkills,
-                readinessScore,
+                baseScore: readinessScore,
                 companyIntel: {
                     size: companySize,
                     industry: industry,
@@ -1773,9 +2007,17 @@
                 },
                 roundMapping: roundMapping,
                 checklist: generateChecklist(extractedSkills),
-                plan: generate7DayPlan(extractedSkills),
-                questions: generateQuestions(extractedSkills)
+                plan7Days: generate7DayPlan(extractedSkills),
+                questions: generateQuestions(extractedSkills),
+                skillConfidenceMap: {},
+                finalScore: readinessScore
             };
+
+            // Initialize skill confidence map (all default to 'practice')
+            Object.values(analysis.extractedSkills).flat().forEach(skill => {
+                analysis.skillConfidenceMap[skill] = 'practice';
+            });
+
             saveAnalysis(analysis);
             displayResults(analysis);
             showPage('results');
@@ -1790,20 +2032,54 @@
         }
 
         function loadHistory() {
-            const history = JSON.parse(localStorage.getItem('jdHistory') || '[]');
-            const historyList = document.getElementById('history-list');
+            try {
+                const rawHistory = localStorage.getItem('jdHistory');
+                const history = JSON.parse(rawHistory || '[]');
 
-            if (history.length === 0) {
-                historyList.innerHTML = '<p style="text-align: center; padding: 40px 0; color: var(--gray-600);">No history yet. Analyze a JD to get started!</p>';
-                return;
+                const validEntries = [];
+                let corruptedCount = 0;
+
+                // Validate and normalize each entry
+                for (const entry of history) {
+                    try {
+                        // Validate entry has minimum required fields
+                        if (!entry.jdText || entry.jdText.length < 10) {
+                            throw new Error('Invalid JD text');
+                        }
+
+                        // Normalize the entry to ensure schema consistency
+                        const normalized = validateAndNormalizeEntry(entry);
+                        validEntries.push(normalized);
+                    } catch (err) {
+                        console.warn('Skipping corrupted entry:', err);
+                        corruptedCount++;
+                    }
+                }
+
+                // Save cleaned history back if we found corrupted entries
+                if (corruptedCount > 0) {
+                    localStorage.setItem('jdHistory', JSON.stringify(validEntries));
+                    showToast('One saved entry couldn\'t be loaded. Create a new analysis.');
+                }
+
+                const historyList = document.getElementById('history-list');
+
+                if (validEntries.length === 0) {
+                    historyList.innerHTML = '<p style="text-align: center; padding: 40px 0; color: var(--gray-600);">No history yet. Analyze a JD to get started!</p>';
+                    return;
+                }
+
+                historyList.innerHTML = validEntries.map(item => `
+                    <div class="problem-item" onclick="viewHistoryItem(${item.id})" style="cursor: pointer;">
+                        <h3>${item.company || 'Unknown Company'} - ${item.role || 'Unknown Role'}</h3>
+                        <p>Score: ${item.finalScore}/100 | ${new Date(item.createdAt).toLocaleDateString()}</p>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load history:', err);
+                const historyList = document.getElementById('history-list');
+                historyList.innerHTML = '<p style="text-align: center; padding: 40px 0; color: var(--error);">Failed to load history. Please try again.</p>';
             }
-
-            historyList.innerHTML = history.map(item => `
-                <div class="problem-item" onclick="viewHistoryItem(${item.id})" style="cursor: pointer;">
-                    <h3>${item.company} - ${item.role}</h3>
-                    <p>Score: ${item.readinessScore}/100 | ${new Date(item.createdAt).toLocaleDateString()}</p>
-                </div>
-            `).join('');
         }
 
         function viewHistoryItem(id) {
@@ -1833,7 +2109,7 @@
             // Calculate adjusted score
             updateAdjustedScore(analysis);
 
-            const displayScore = analysis.adjustedReadinessScore || analysis.readinessScore;
+            const displayScore = analysis.finalScore || analysis.baseScore;
             const circumference = 2 * Math.PI * 90;
             const offset = circumference - (displayScore / 100) * circumference;
 
@@ -1852,23 +2128,23 @@
                 </div>
             `).join('');
 
-            const checklistHTML = Object.entries(analysis.checklist).map(([round, items]) => `
+            const checklistHTML = analysis.checklist.map(item => `
                 <div style="margin-bottom: 24px;">
-                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--gray-900);">${round}</h4>
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--gray-900);">${item.roundTitle}</h4>
                     <ul style="list-style: none; padding: 0;">
-                        ${items.map(item => `<li style="padding: 8px 0; padding-left: 24px; position: relative;">
+                        ${item.items.map(bullet => `<li style="padding: 8px 0; padding-left: 24px; position: relative;">
                             <span style="position: absolute; left: 0; color: var(--primary);">✓</span>
-                            ${item}
+                            ${bullet}
                         </li>`).join('')}
                     </ul>
                 </div>
             `).join('');
 
-            const planHTML = Object.entries(analysis.plan).map(([day, tasks]) => `
+            const planHTML = analysis.plan7Days.map(item => `
                 <div style="margin-bottom: 20px;">
-                    <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--primary);">${day}</h4>
+                    <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--primary);">${item.day}${item.focus ? ': ' + item.focus : ''}</h4>
                     <ul style="list-style: disc; padding-left: 24px; color: var(--gray-700);">
-                        ${tasks.map(task => `<li style="margin-bottom: 6px;">${task}</li>`).join('')}
+                        ${item.tasks.map(task => `<li style="margin-bottom: 6px;">${task}</li>`).join('')}
                     </ul>
                 </div>
             `).join('');
@@ -1918,7 +2194,7 @@
                         <div style="margin-top: 20px; text-align: center;">
                             <p style="margin: 4px 0;"><strong>Company:</strong> ${analysis.company}</p>
                             <p style="margin: 4px 0;"><strong>Role:</strong> ${analysis.role}</p>
-                            <p style="margin: 4px 0; font-size: 12px; color: var(--gray-600);">Base: ${analysis.readinessScore} | Adjusted: ${displayScore}</p>
+                            <p style="margin: 4px 0; font-size: 12px; color: var(--gray-600);">Base: ${analysis.baseScore} | Adjusted: ${displayScore}</p>
                         </div>
                     </div>
 
@@ -2012,6 +2288,7 @@
 
             const current = currentAnalysis.skillConfidenceMap[skill] || 'practice';
             currentAnalysis.skillConfidenceMap[skill] = current === 'practice' ? 'know' : 'practice';
+            currentAnalysis.updatedAt = new Date().toISOString();
 
             updateAdjustedScore(currentAnalysis);
             saveAnalysisChanges(currentAnalysis);
@@ -2019,14 +2296,14 @@
         }
 
         function updateAdjustedScore(analysis) {
-            let adjusted = analysis.readinessScore;
+            let adjusted = analysis.baseScore;
 
             for (const [skill, confidence] of Object.entries(analysis.skillConfidenceMap || {})) {
                 if (confidence === 'know') adjusted += 2;
                 else if (confidence === 'practice') adjusted -= 2;
             }
 
-            analysis.adjustedReadinessScore = Math.max(0, Math.min(100, adjusted));
+            analysis.finalScore = Math.max(0, Math.min(100, adjusted));
         }
 
         function saveAnalysisChanges(analysis) {
@@ -2047,9 +2324,9 @@
             if (!currentAnalysis) return;
 
             let text = '7-DAY PREPARATION PLAN\n\n';
-            for (const [day, tasks] of Object.entries(currentAnalysis.plan)) {
-                text += `${day}\n`;
-                tasks.forEach(task => text += `  - ${task}\n`);
+            for (const item of currentAnalysis.plan7Days) {
+                text += `${item.day}${item.focus ? ': ' + item.focus : ''}\n`;
+                item.tasks.forEach(task => text += `  - ${task}\n`);
                 text += '\n';
             }
 
@@ -2060,9 +2337,9 @@
             if (!currentAnalysis) return;
 
             let text = 'ROUND-WISE PREPARATION CHECKLIST\n\n';
-            for (const [round, items] of Object.entries(currentAnalysis.checklist)) {
-                text += `${round}\n`;
-                items.forEach(item => text += `  ✓ ${item}\n`);
+            for (const item of currentAnalysis.checklist) {
+                text += `${item.roundTitle}\n`;
+                item.items.forEach(bullet => text += `  ✓ ${bullet}\n`);
                 text += '\n';
             }
 
@@ -2086,7 +2363,7 @@
             let content = `PLACEMENT PREPARATION REPORT\n`;
             content += `Company: ${currentAnalysis.company}\n`;
             content += `Role: ${currentAnalysis.role}\n`;
-            content += `Readiness Score: ${currentAnalysis.adjustedReadinessScore || currentAnalysis.readinessScore}/100\n`;
+            content += `Readiness Score: ${currentAnalysis.finalScore || currentAnalysis.baseScore}/100\n`;
             content += `Generated: ${new Date(currentAnalysis.createdAt).toLocaleString()}\n\n`;
             content += `${'='.repeat(60)}\n\n`;
 
@@ -2103,17 +2380,17 @@
 
             content += `${'='.repeat(60)}\n\n`;
             content += `ROUND-WISE PREPARATION CHECKLIST\n\n`;
-            for (const [round, items] of Object.entries(currentAnalysis.checklist)) {
-                content += `${round}\n`;
-                items.forEach(item => content += `  ✓ ${item}\n`);
+            for (const item of currentAnalysis.checklist) {
+                content += `${item.roundTitle}\n`;
+                item.items.forEach(bullet => content += `  ✓ ${bullet}\n`);
                 content += '\n';
             }
 
             content += `${'='.repeat(60)}\n\n`;
             content += `7-DAY PREPARATION PLAN\n\n`;
-            for (const [day, tasks] of Object.entries(currentAnalysis.plan)) {
-                content += `${day}\n`;
-                tasks.forEach(task => content += `  - ${task}\n`);
+            for (const item of currentAnalysis.plan7Days) {
+                content += `${item.day}${item.focus ? ': ' + item.focus : ''}\n`;
+                item.tasks.forEach(task => content += `  - ${task}\n`);
                 content += '\n';
             }
 
