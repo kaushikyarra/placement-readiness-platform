@@ -436,6 +436,195 @@
             border-color: var(--primary);
         }
 
+        /* Enhanced Dashboard Styles */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .dashboard-card {
+            background: var(--white);
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--gray-900);
+        }
+
+        /* Circular Progress */
+        .readiness-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .circular-progress {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+
+        .circular-progress svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-circle-bg {
+            fill: none;
+            stroke: var(--gray-200);
+            stroke-width: 12;
+        }
+
+        .progress-circle {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .progress-number {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .progress-label {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-top: 8px;
+        }
+
+        /* Radar Chart */
+        .radar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+
+        .radar-chart {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        .radar-label {
+            position: absolute;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        /* Continue Practice */
+        .practice-topic {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 16px;
+        }
+
+        .progress-bar-container {
+            background-color: var(--gray-200);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-bottom: 20px;
+        }
+
+        /* Weekly Goals */
+        .weekly-progress {
+            margin-bottom: 24px;
+        }
+
+        .weekly-progress h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .day-indicators {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .day-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            border: 2px solid var(--gray-300);
+            color: var(--gray-600);
+        }
+
+        .day-circle.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: var(--white);
+        }
+
+        /* Upcoming Assessments */
+        .assessment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .assessment-item {
+            padding: 16px;
+            border-left: 4px solid var(--primary);
+            background-color: var(--gray-50);
+            border-radius: 4px;
+        }
+
+        .assessment-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .assessment-time {
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 40px;
@@ -456,6 +645,10 @@
             .sidebar-header,
             .nav-text {
                 display: none;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -573,21 +766,128 @@
             <main class="content">
                 <!-- Dashboard Home -->
                 <div id="dashboard-home" class="page-content active">
-                    <div class="card">
-                        <h2>Dashboard</h2>
-                        <p>Welcome to your placement preparation dashboard!</p>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <h3>Problems Solved</h3>
-                                <div class="stat-value">47</div>
+                    <!-- Dashboard Grid -->
+                    <div class="dashboard-grid">
+                        <!-- Overall Readiness -->
+                        <div class="dashboard-card">
+                            <h3>Overall Readiness</h3>
+                            <div class="readiness-container">
+                                <div class="circular-progress">
+                                    <svg width="200" height="200">
+                                        <circle class="progress-circle-bg" cx="100" cy="100" r="90"></circle>
+                                        <circle class="progress-circle" cx="100" cy="100" r="90"
+                                            stroke-dasharray="565.48" stroke-dashoffset="158.73"></circle>
+                                    </svg>
+                                    <div class="progress-text">
+                                        <div class="progress-number">72</div>
+                                        <div class="progress-label">Readiness Score</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="stat-card">
-                                <h3>Mock Interviews</h3>
-                                <div class="stat-value">12</div>
+                        </div>
+
+                        <!-- Skill Breakdown -->
+                        <div class="dashboard-card">
+                            <h3>Skill Breakdown</h3>
+                            <div class="radar-container">
+                                <div class="radar-chart">
+                                    <svg width="300" height="300" viewBox="0 0 300 300">
+                                        <!-- Pentagon grid -->
+                                        <polygon points="150,30 258,105 228,225 72,225 42,105" fill="none"
+                                            stroke="var(--gray-200)" stroke-width="1"></polygon>
+                                        <polygon points="150,60 234,112.5 213,210 87,210 66,112.5" fill="none"
+                                            stroke="var(--gray-200)" stroke-width="1"></polygon>
+                                        <polygon points="150,90 210,120 198,195 102,195 90,120" fill="none"
+                                            stroke="var(--gray-200)" stroke-width="1"></polygon>
+                                        <polygon points="150,120 186,127.5 183,180 117,180 114,127.5" fill="none"
+                                            stroke="var(--gray-200)" stroke-width="1"></polygon>
+                                        <polygon points="150,150 162,135 168,165 132,165 138,135" fill="none"
+                                            stroke="var(--gray-200)" stroke-width="1"></polygon>
+
+                                        <!-- Axis lines -->
+                                        <line x1="150" y1="150" x2="150" y2="30" stroke="var(--gray-300)"
+                                            stroke-width="1"></line>
+                                        <line x1="150" y1="150" x2="258" y2="105" stroke="var(--gray-300)"
+                                            stroke-width="1"></line>
+                                        <line x1="150" y1="150" x2="228" y2="225" stroke="var(--gray-300)"
+                                            stroke-width="1"></line>
+                                        <line x1="150" y1="150" x2="72" y2="225" stroke="var(--gray-300)"
+                                            stroke-width="1"></line>
+                                        <line x1="150" y1="150" x2="42" y2="105" stroke="var(--gray-300)"
+                                            stroke-width="1"></line>
+
+                                        <!-- Data polygon (DSA:75, SysDesign:60, Comm:80, Resume:85, Aptitude:70) -->
+                                        <polygon points="150,60 234,120 216,207 90,213 54,114" fill="var(--primary)"
+                                            fill-opacity="0.3" stroke="var(--primary)" stroke-width="2"></polygon>
+
+                                        <!-- Data points -->
+                                        <circle cx="150" cy="60" r="4" fill="var(--primary)"></circle>
+                                        <circle cx="234" cy="120" r="4" fill="var(--primary)"></circle>
+                                        <circle cx="216" cy="207" r="4" fill="var(--primary)"></circle>
+                                        <circle cx="90" cy="213" r="4" fill="var(--primary)"></circle>
+                                        <circle cx="54" cy="114" r="4" fill="var(--primary)"></circle>
+                                    </svg>
+                                    <!-- Labels -->
+                                    <div class="radar-label" style="top: 5px; left: 50%; transform: translateX(-50%);">
+                                        DSA (75)</div>
+                                    <div class="radar-label" style="top: 30%; right: -10px;">System Design (60)</div>
+                                    <div class="radar-label" style="bottom: 15px; right: 20px;">Communication (80)</div>
+                                    <div class="radar-label" style="bottom: 15px; left: 0px;">Resume (85)</div>
+                                    <div class="radar-label" style="top: 30%; left: -30px;">Aptitude (70)</div>
+                                </div>
                             </div>
-                            <div class="stat-card">
-                                <h3>Success Rate</h3>
-                                <div class="stat-value">85%</div>
+                        </div>
+
+                        <!-- Continue Practice -->
+                        <div class="dashboard-card">
+                            <h3>Continue Practice</h3>
+                            <div class="practice-topic">Dynamic Programming</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: 30%;"></div>
+                            </div>
+                            <div class="progress-info">
+                                <span>3/10 completed</span>
+                                <span>30%</span>
+                            </div>
+                            <button class="btn btn-primary">Continue</button>
+                        </div>
+
+                        <!-- Weekly Goals -->
+                        <div class="dashboard-card">
+                            <h3>Weekly Goals</h3>
+                            <div class="weekly-progress">
+                                <h4>Problems Solved: 12/20 this week</h4>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                            <div class="day-indicators">
+                                <div class="day-circle active">M</div>
+                                <div class="day-circle active">T</div>
+                                <div class="day-circle active">W</div>
+                                <div class="day-circle active">T</div>
+                                <div class="day-circle">F</div>
+                                <div class="day-circle">S</div>
+                                <div class="day-circle">S</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Assessments (Full Width) -->
+                    <div class="dashboard-card">
+                        <h3>Upcoming Assessments</h3>
+                        <div class="assessment-list">
+                            <div class="assessment-item">
+                                <div class="assessment-title">DSA Mock Test</div>
+                                <div class="assessment-time">Tomorrow, 10:00 AM</div>
+                            </div>
+                            <div class="assessment-item">
+                                <div class="assessment-title">System Design Review</div>
+                                <div class="assessment-time">Wed, 2:00 PM</div>
+                            </div>
+                            <div class="assessment-item">
+                                <div class="assessment-title">HR Interview Prep</div>
+                                <div class="assessment-time">Friday, 11:00 AM</div>
                             </div>
                         </div>
                     </div>
