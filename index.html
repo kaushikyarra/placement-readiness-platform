@@ -1069,6 +1069,132 @@
             margin-bottom: 24px;
             color: #059669;
         }
+
+        /* Proof Page Styles */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.in-progress {
+            background-color: #fef3c7;
+            color: #d97706;
+            border: 1px solid #fcd34d;
+        }
+
+        .status-badge.shipped {
+            background-color: #d1fae5;
+            color: #059669;
+            border: 1px solid #6ee7b7;
+        }
+
+        .proof-section {
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .proof-section:last-child {
+            border-bottom: none;
+        }
+
+        .proof-section h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--gray-50);
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--gray-200);
+        }
+
+        .step-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .step-status {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .step-status.completed {
+            color: #059669;
+        }
+
+        .step-status.pending {
+            color: #d97706;
+            /* Should not happen if locked correctly */
+        }
+
+        .artifact-input-group {
+            margin-bottom: 16px;
+        }
+
+        .completion-message {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 32px;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .completion-message.visible {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .completion-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .completion-text {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -1217,6 +1343,11 @@
                 </div>
                 <div class="user-avatar">U</div>
             </header>
+
+            <div
+                style="background-color: var(--white); border-bottom: 1px solid var(--gray-200); padding: 8px 32px; display: flex; justify-content: flex-end;">
+                <span id="project-status-badge" class="status-badge in-progress">In Progress</span>
+            </div>
 
             <main class="content">
                 <!-- Dashboard Home -->
@@ -1548,16 +1679,76 @@
                     </div>
                 </div>
 
-                <!-- Ship Page -->
+                <!-- Ship Page (Proof & Submission) -->
                 <div id="ship" class="page-content">
                     <div class="card">
-                        <h2>Ship It!</h2>
-                        <div class="ship-success-message">
-                            <div class="ship-success-icon">🚀</div>
-                            <h3 style="font-size: 24px; margin-bottom: 16px;">Ready for Liftoff</h3>
-                            <p style="font-size: 18px; color: var(--gray-600); max-width: 600px; margin: 0 auto;">
-                                All tests passed. The platform is stable, persisted, and ready for use.
+                        <h2>Proof & Submission</h2>
+                        <p>Complete these steps to mark your project as Shipped.</p>
+
+                        <!-- Section A: Step Completion Overview -->
+                        <div class="proof-section">
+                            <h3>A) Development Steps</h3>
+                            <div class="step-list">
+                                <div class="step-item"><span class="step-name">1. Project Setup</span><span
+                                        class="step-status completed">Completed</span></div>
+                                <div class="step-item"><span class="step-name">2. Design System</span><span
+                                        class="step-status completed">Completed</span></div>
+                                <div class="step-item"><span class="step-name">3. Dashboard Layout</span><span
+                                        class="step-status completed">Completed</span></div>
+                                <div class="step-item"><span class="step-name">4. JD Analyzer (Regex)</span><span
+                                        class="step-status completed">Completed</span></div>
+                                <div class="step-item"><span class="step-name">5. Score Logic</span><span
+                                        class="step-status completed">Completed</span></div>
+                                <div class="step-item"><span class="step-name">6. History System</span><span
+                                        class="step-status completed">Completed</span></div>
+                                <div class="step-item"><span class="step-name">7. Test Checklist</span><span
+                                        class="step-status completed">Completed</span></div>
+                                <div class="step-item"><span class="step-name">8. Ship Gate</span><span
+                                        class="step-status completed">Completed</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Section B: Artifact Inputs -->
+                        <div class="proof-section">
+                            <h3>B) Required Artifacts</h3>
+                            <div class="artifact-input-group">
+                                <label class="form-label">Lovable Project Link *</label>
+                                <input type="url" id="link-lovable" class="form-input"
+                                    placeholder="https://lovable.dev/..." oninput="validateProofLinks()">
+                            </div>
+                            <div class="artifact-input-group">
+                                <label class="form-label">GitHub Repository Link *</label>
+                                <input type="url" id="link-github" class="form-input"
+                                    placeholder="https://github.com/..." oninput="validateProofLinks()">
+                            </div>
+                            <div class="artifact-input-group">
+                                <label class="form-label">Deployed URL *</label>
+                                <input type="url" id="link-deploy" class="form-input" placeholder="https://..."
+                                    oninput="validateProofLinks()">
+                            </div>
+                        </div>
+
+                        <!-- Section C: Submission -->
+                        <div class="proof-section">
+                            <h3>C) Final Submission</h3>
+                            <p style="font-size: 14px; color: var(--gray-600); margin-bottom: 16px;">
+                                Only enabled when all checkist items are passed and all links are valid.
                             </p>
+                            <button id="btn-copy-submission" class="btn btn-primary" onclick="copySubmission()" disabled
+                                style="opacity: 0.5; cursor: not-allowed;">
+                                Copy Final Submission
+                            </button>
+                        </div>
+
+                        <!-- Section D: Completion Message -->
+                        <div id="completion-message" class="completion-message">
+                            <div class="ship-success-icon" style="color: #6ee7b7;">🚀</div>
+                            <div class="completion-title">You built a real product.</div>
+                            <div class="completion-text">
+                                Not a tutorial. Not a clone.<br>
+                                A structured tool that solves a real problem.<br><br>
+                                This is your proof of work.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1612,11 +1803,101 @@
                     showPage('test-checklist');
                     return;
                 }
+                // Load saved links if visiting ship page
+                loadProofLinks();
+                validateProofLinks(); // Check status on load
             }
 
             if (pageId === 'test-checklist') {
                 renderChecklist();
             }
+        }
+
+        // ===== PROOF & SUBMISSION LOGIC =====
+        function loadProofLinks() {
+            const links = JSON.parse(localStorage.getItem('prp_final_submission') || '{}');
+            document.getElementById('link-lovable').value = links.lovable || '';
+            document.getElementById('link-github').value = links.github || '';
+            document.getElementById('link-deploy').value = links.deploy || '';
+        }
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function validateProofLinks() {
+            const lovable = document.getElementById('link-lovable').value.trim();
+            const github = document.getElementById('link-github').value.trim();
+            const deploy = document.getElementById('link-deploy').value.trim();
+
+            const isLovableValid = isValidUrl(lovable);
+            const isGithubValid = isValidUrl(github);
+            const isDeployValid = isValidUrl(deploy);
+
+            // Save to local storage
+            localStorage.setItem('prp_final_submission', JSON.stringify({
+                lovable, github, deploy
+            }));
+
+            // Check if all proof conditions are met
+            // 1. Checklist must be complete (already checked by route guard, but double check)
+            const isChecklistComplete = checkShipGuard();
+
+            // 2. All links must be valid
+            const areLinksValid = isLovableValid && isGithubValid && isDeployValid;
+
+            const isShippable = isChecklistComplete && areLinksValid;
+
+            // Update UI
+            const btnCopy = document.getElementById('btn-copy-submission');
+            const statusBadge = document.getElementById('project-status-badge');
+            const completionMsg = document.getElementById('completion-message');
+
+            if (isShippable) {
+                btnCopy.disabled = false;
+                btnCopy.style.opacity = '1';
+                btnCopy.style.cursor = 'pointer';
+
+                statusBadge.textContent = 'Shipped';
+                statusBadge.className = 'status-badge shipped';
+
+                completionMsg.classList.add('visible');
+            } else {
+                btnCopy.disabled = true;
+                btnCopy.style.opacity = '0.5';
+                btnCopy.style.cursor = 'not-allowed';
+
+                statusBadge.textContent = 'In Progress';
+                statusBadge.className = 'status-badge in-progress';
+
+                completionMsg.classList.remove('visible');
+            }
+        }
+
+        function copySubmission() {
+            const links = JSON.parse(localStorage.getItem('prp_final_submission') || '{}');
+
+            const text = `------------------------------------------
+Placement Readiness Platform — Final Submission
+
+Lovable Project: ${links.lovable}
+GitHub Repository: ${links.github}
+Live Deployment: ${links.deploy}
+
+Core Capabilities:
+- JD skill extraction (deterministic)
+- Round mapping engine
+- 7-day prep plan
+- Interactive readiness scoring
+- History persistence
+------------------------------------------`;
+
+            copyToClipboard(text);
         }
 
         // ===== TEST CHECKLIST LOGIC =====
