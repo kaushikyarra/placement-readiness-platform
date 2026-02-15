@@ -732,9 +732,10 @@
             color: white;
             padding: 16px 24px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 14px;
             animation: slideIn 0.3s ease;
+            z-index: 1000;
         }
 
         @keyframes slideIn {
@@ -747,6 +748,150 @@
                 transform: translateX(0);
                 opacity: 1;
             }
+        }
+
+        /* Company Intel Card */
+        .company-intel {
+            background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
+            border: 1px solid var(--gray-300);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .company-intel h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 18px;
+            color: var(--gray-900);
+        }
+
+        .intel-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .intel-label {
+            font-weight: 600;
+            color: var(--gray-700);
+            min-width: 80px;
+        }
+
+        .intel-value {
+            color: var(--gray-900);
+        }
+
+        .hiring-focus {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .hiring-focus h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        .hiring-focus ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .hiring-focus li {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-bottom: 4px;
+        }
+
+        .demo-note {
+            margin-top: 12px;
+            padding: 8px 12px;
+            background-color: #eff6ff;
+            border-left: 3px solid #3b82f6;
+            font-size: 12px;
+            color: var(--gray-600);
+            border-radius: 4px;
+        }
+
+        /* Round Mapping Timeline */
+        .round-mapping {
+            background-color: white;
+            border: 1px solid var(--gray-300);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .round-mapping h3 {
+            font-size: 18px;
+            color: var(--gray-900);
+            margin-bottom: 20px;
+        }
+
+        .round-timeline {
+            position: relative;
+            padding-left: 32px;
+        }
+
+        .round-item {
+            position: relative;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+        }
+
+        .round-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px var(--primary);
+            z-index: 1;
+        }
+
+        .round-item::after {
+            content: '';
+            position: absolute;
+            left: -19px;
+            top: 20px;
+            width: 2px;
+            height: calc(100% + 16px);
+            background-color: var(--gray-300);
+        }
+
+        .round-item:last-child::after {
+            display: none;
+        }
+
+        .round-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .round-focus {
+            font-size: 14px;
+            color: var(--primary);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .round-why {
+            font-size: 13px;
+            color: var(--gray-600);
+            font-style: italic;
+            line-height: 1.5;
         }
 
         @media (max-width: 768px) {
@@ -1283,7 +1428,144 @@
         }
 
         // ===== CONTENT GENERATORS =====
+        // Company Intelligence Functions
+        const enterpriseCompanies = [
+            'amazon', 'google', 'microsoft', 'meta', 'apple', 'facebook',
+            'infosys', 'tcs', 'wipro', 'cognizant', 'accenture', 'capgemini',
+            'ibm', 'oracle', 'sap', 'adobe', 'salesforce', 'intel', 'nvidia',
+            'goldman sachs', 'jp morgan', 'morgan stanley', 'citi', 'hsbc',
+            'uber', 'airbnb', 'netflix', 'linkedin', 'twitter', 'spotify',
+            'deloitte', 'pwc', 'ey', 'kpmg', 'mckinsey', 'bain', 'bcg'
+        ];
+
+        function detectCompanySize(companyName) {
+            if (!companyName) return 'Startup (<200)';
+
+            const normalized = companyName.toLowerCase().trim();
+
+            // Check against known enterprise list
+            const isEnterprise = enterpriseCompanies.some(e =>
+                normalized.includes(e) || e.includes(normalized)
+            );
+
+            return isEnterprise ? 'Enterprise (2000+)' : 'Startup (<200)';
+        }
+
+        function detectIndustry(companyName, jdText) {
+            const text = ((companyName || '') + ' ' + (jdText || '')).toLowerCase();
+
+            if (text.match(/bank|finance|trading|investment|capital|wealth/)) {
+                return 'Financial Services';
+            }
+            if (text.match(/health|medical|pharma|hospital|clinic/)) {
+                return 'Healthcare';
+            }
+            if (text.match(/retail|ecommerce|shop|commerce|marketplace/)) {
+                return 'E-commerce/Retail';
+            }
+            if (text.match(/consult|advisory|strategy/)) {
+                return 'Consulting';
+            }
+            if (text.match(/media|entertainment|streaming|content/)) {
+                return 'Media & Entertainment';
+            }
+
+            return 'Technology Services'; // Default
+        }
+
+        function generateHiringFocus(companySize, skills) {
+            const isEnterprise = companySize.includes('Enterprise');
+
+            if (isEnterprise) {
+                return [
+                    'Structured DSA + algorithms',
+                    'Strong core CS fundamentals',
+                    'System design at scale',
+                    'Behavioral competencies (STAR format)'
+                ];
+            } else {
+                return [
+                    'Practical problem solving',
+                    'Hands-on coding ability',
+                    'Stack depth and breadth',
+                    'Startup mindset and adaptability'
+                ];
+            }
+        }
+
+        function generateRoundMapping(companySize, skills) {
+            const isEnterprise = companySize.includes('Enterprise');
+            const hasDSA = skills['Core CS']?.some(s => s.toLowerCase().includes('dsa'));
+            const hasWeb = skills['Web']?.length > 0;
+            const hasCloud = skills['Cloud/DevOps']?.length > 0;
+
+            if (isEnterprise && hasDSA) {
+                // Enterprise + DSA pattern
+                return [
+                    {
+                        name: 'Round 1: Online Test',
+                        focus: 'DSA + Aptitude',
+                        why: 'Filters candidates at scale. Tests problem-solving speed and accuracy under time pressure.'
+                    },
+                    {
+                        name: 'Round 2: Technical Interview',
+                        focus: 'DSA + Core CS Fundamentals',
+                        why: 'Deep dive into algorithms, data structures, and computer science theory. Assesses depth of knowledge.'
+                    },
+                    {
+                        name: 'Round 3: Tech + Projects',
+                        focus: 'System Design + Experience',
+                        why: 'Evaluates real-world problem solving, scalability thinking, and ability to discuss past projects.'
+                    },
+                    {
+                        name: 'Round 4: HR/Behavioral',
+                        focus: 'Culture Fit + Negotiation',
+                        why: 'Assesses soft skills, team dynamics, leadership potential, and finalizes compensation.'
+                    }
+                ];
+            } else if (!isEnterprise && hasWeb) {
+                // Startup + Web stack pattern
+                return [
+                    {
+                        name: 'Round 1: Practical Coding',
+                        focus: 'Build a feature with your stack',
+                        why: 'Tests hands-on ability to ship working code quickly. Startups value execution speed.'
+                    },
+                    {
+                        name: 'Round 2: System Discussion',
+                        focus: 'Architecture + Trade-offs',
+                        why: 'Evaluates understanding of real-world constraints, technical decisions, and scalability.'
+                    },
+                    {
+                        name: 'Round 3: Culture Fit',
+                        focus: 'Team Dynamics + Vision Alignment',
+                        why: 'Ensures you thrive in fast-paced startup environment and align with company mission.'
+                    }
+                ];
+            } else {
+                // General pattern
+                return [
+                    {
+                        name: 'Round 1: Screening',
+                        focus: 'Technical Basics + Background',
+                        why: 'Initial assessment of technical knowledge and communication skills.'
+                    },
+                    {
+                        name: 'Round 2: Technical Deep Dive',
+                        focus: 'Problem Solving + Coding',
+                        why: 'Evaluates core technical abilities and approach to solving problems.'
+                    },
+                    {
+                        name: 'Round 3: Final Interview',
+                        focus: 'Culture + Offer Discussion',
+                        why: 'Ensures mutual fit and discusses role expectations and compensation.'
+                    }
+                ];
+            }
+        }
+
         function generateChecklist(skills) {
+
             const checklist = {
                 'Round 1: Aptitude / Basics': [
                     'Practice quantitative aptitude questions',
@@ -1467,23 +1749,33 @@
             }
 
             const readinessScore = calculateReadiness(company, role, jdText, extractedSkills);
-            const checklist = generateChecklist(extractedSkills);
-            const plan = generate7DayPlan(extractedSkills);
-            const questions = generateQuestions(extractedSkills);
+
+            // Generate Company Intel
+            const companySize = detectCompanySize(company);
+            const industry = detectIndustry(company, jdText);
+            const hiringFocus = generateHiringFocus(companySize, extractedSkills);
+
+            // Generate Round Mapping
+            const roundMapping = generateRoundMapping(companySize, extractedSkills);
 
             const analysis = {
                 id: Date.now(),
-                createdAt: new Date().toISOString(),
+                timestamp: new Date().toISOString(),
                 company: company || 'Not specified',
                 role: role || 'Not specified',
                 jdText,
                 extractedSkills,
-                checklist,
-                plan,
-                questions,
-                readinessScore
+                readinessScore,
+                companyIntel: {
+                    size: companySize,
+                    industry: industry,
+                    hiringFocus: hiringFocus
+                },
+                roundMapping: roundMapping,
+                checklist: generateChecklist(extractedSkills),
+                plan: generate7DayPlan(extractedSkills),
+                questions: generateQuestions(extractedSkills)
             };
-
             saveAnalysis(analysis);
             displayResults(analysis);
             showPage('results');
@@ -1636,6 +1928,48 @@
                         ${skillsHTML}
                     </div>
                 </div>
+
+                ${analysis.companyIntel ? `
+                <div class="company-intel">
+                    <h3>🏢 Company Intel</h3>
+                    <div class="intel-row">
+                        <span class="intel-label">Company:</span>
+                        <span class="intel-value">${analysis.company}</span>
+                    </div>
+                    <div class="intel-row">
+                        <span class="intel-label">Industry:</span>
+                        <span class="intel-value">${analysis.companyIntel.industry}</span>
+                    </div>
+                    <div class="intel-row">
+                        <span class="intel-label">Size:</span>
+                        <span class="intel-value">${analysis.companyIntel.size}</span>
+                    </div>
+                    <div class="hiring-focus">
+                        <h4>Typical Hiring Focus:</h4>
+                        <ul>
+                            ${analysis.companyIntel.hiringFocus.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="demo-note">
+                        ℹ️ Demo Mode: Company intel generated heuristically
+                    </div>
+                </div>
+                ` : ''}
+
+                ${analysis.roundMapping ? `
+                <div class="round-mapping">
+                    <h3>📍 Interview Round Mapping</h3>
+                    <div class="round-timeline">
+                        ${analysis.roundMapping.map(round => `
+                            <div class="round-item">
+                                <div class="round-name">${round.name}</div>
+                                <div class="round-focus">Focus: ${round.focus}</div>
+                                <div class="round-why">Why this matters: ${round.why}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
 
                 <div class="dashboard-card">
                     <h3>Round-wise Preparation Checklist</h3>
