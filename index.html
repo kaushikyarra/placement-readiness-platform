@@ -964,6 +964,111 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Test Checklist Styles */
+        .checklist-container {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .checklist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .checklist-status {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .checklist-status.warning {
+            color: #d97706;
+        }
+
+        .checklist-status.success {
+            color: #059669;
+        }
+
+        .checklist-items {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .checklist-item:hover {
+            border-color: var(--primary);
+            background-color: var(--gray-50);
+        }
+
+        .checklist-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-top: 4px;
+            margin-right: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 2px solid var(--gray-300);
+        }
+
+        .checklist-checkbox:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .checklist-content h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .checklist-content p {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin: 0;
+        }
+
+        .checklist-hint {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--gray-600);
+            background-color: var(--gray-100);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .ship-lock-message {
+            text-align: center;
+            padding: 48px;
+            color: var(--gray-600);
+        }
+
+        .ship-success-message {
+            text-align: center;
+            padding: 48px;
+        }
+
+        .ship-success-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+            color: #059669;
+        }
     </style>
 </head>
 
@@ -1081,6 +1186,20 @@
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <span class="nav-text">History</span>
+                </a>
+                <a class="nav-item" onclick="showPage('test-checklist')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="nav-text">Test Checklist</span>
+                </a>
+                <a class="nav-item" onclick="showPage('ship')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    <span class="nav-text">Ship</span>
                 </a>
             </nav>
         </aside>
@@ -1400,6 +1519,48 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Test Checklist Page -->
+                <div id="test-checklist" class="page-content">
+                    <div class="card">
+                        <h2>Test Checklist</h2>
+                        <p>Verify all functionality before shipping</p>
+
+                        <div class="checklist-container">
+                            <div class="checklist-header">
+                                <div id="checklist-summary" class="checklist-status warning">
+                                    Tests Passed: 0 / 10
+                                </div>
+                                <button class="btn btn-secondary" onclick="resetChecklist()"
+                                    style="font-size: 14px; padding: 8px 16px;">
+                                    Reset checklist
+                                </button>
+                            </div>
+
+                            <div id="checklist-warning" class="validation-warning" style="margin-bottom: 24px;">
+                                ⚠️ Fix issues before shipping.
+                            </div>
+
+                            <div class="checklist-items" id="checklist-items-container">
+                                <!-- Items will be injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ship Page -->
+                <div id="ship" class="page-content">
+                    <div class="card">
+                        <h2>Ship It!</h2>
+                        <div class="ship-success-message">
+                            <div class="ship-success-icon">🚀</div>
+                            <h3 style="font-size: 24px; margin-bottom: 16px;">Ready for Liftoff</h3>
+                            <p style="font-size: 18px; color: var(--gray-600); max-width: 600px; margin: 0 auto;">
+                                All tests passed. The platform is stable, persisted, and ready for use.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
@@ -1436,6 +1597,105 @@
                 if (latest) {
                     displayResults(latest);
                 }
+            }
+
+            // Route guard for Ship page
+            if (pageId === 'ship') {
+                if (!checkShipGuard()) {
+                    showToast('⚠️ Complete the checklist before shipping!');
+                    // Revert active class changes
+                    document.getElementById('ship').classList.remove('active');
+                    event.target.closest('.nav-item').classList.remove('active');
+
+                    // Go back to previous page or stay on current
+                    // Simple fallback: go to checklist
+                    showPage('test-checklist');
+                    return;
+                }
+            }
+
+            if (pageId === 'test-checklist') {
+                renderChecklist();
+            }
+        }
+
+        // ===== TEST CHECKLIST LOGIC =====
+        const checklistItems = [
+            { id: 'jd-validation', text: 'JD required validation works', hint: 'Try analyzing without JD text' },
+            { id: 'short-jd-warning', text: 'Short JD warning shows for <200 chars', hint: 'Enter 100 chars and check warning' },
+            { id: 'skills-extraction', text: 'Skills extraction groups correctly', hint: 'Check if React goes to Web, Python to Languages' },
+            { id: 'round-mapping', text: 'Round mapping changes based on company + skills', hint: 'Compare Startup vs Enterprise results' },
+            { id: 'score-calc', text: 'Score calculation is deterministic', hint: 'Same JD should yield same score' },
+            { id: 'skill-toggles', text: 'Skill toggles update score live', hint: 'Click skills and watch arc change' },
+            { id: 'persistence', text: 'Changes persist after refresh', hint: 'Refresh page and check if score/skills persist' },
+            { id: 'history-save', text: 'History saves and loads correctly', hint: 'Check History tab after analysis' },
+            { id: 'export-buttons', text: 'Export buttons copy the correct content', hint: 'Test all 3 copy buttons' },
+            { id: 'no-console-errors', text: 'No console errors on core pages', hint: 'Check DevTools Console' }
+        ];
+
+        function loadChecklistState() {
+            return JSON.parse(localStorage.getItem('prp-test-checklist') || '{}');
+        }
+
+        function saveChecklistState(state) {
+            localStorage.setItem('prp-test-checklist', JSON.stringify(state));
+        }
+
+        function toggleChecklistItem(id) {
+            const state = loadChecklistState();
+            state[id] = !state[id];
+            saveChecklistState(state);
+            renderChecklist();
+        }
+
+        function checkShipGuard() {
+            const state = loadChecklistState();
+            return checklistItems.every(item => state[item.id] === true);
+        }
+
+        function resetChecklist() {
+            if (confirm('Reset all checklist items?')) {
+                localStorage.removeItem('prp-test-checklist');
+                renderChecklist();
+                showToast('Checklist reset');
+            }
+        }
+
+        function renderChecklist() {
+            const container = document.getElementById('checklist-items-container');
+            const state = loadChecklistState();
+            let passedCount = 0;
+
+            container.innerHTML = checklistItems.map(item => {
+                const isChecked = state[item.id] === true;
+                if (isChecked) passedCount++;
+
+                return `
+                    <div class="checklist-item" onclick="toggleChecklistItem('${item.id}')" style="cursor: pointer;">
+                        <input type="checkbox" class="checklist-checkbox" ${isChecked ? 'checked' : ''} readonly>
+                        <div class="checklist-content">
+                            <h4>${item.text}</h4>
+                            ${item.hint ? `<span class="checklist-hint">💡 ${item.hint}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update Summary
+            const summaryEl = document.getElementById('checklist-summary');
+            const warningEl = document.getElementById('checklist-warning');
+
+            summaryEl.textContent = `Tests Passed: ${passedCount} / ${checklistItems.length}`;
+
+            if (passedCount === checklistItems.length) {
+                summaryEl.classList.remove('warning');
+                summaryEl.classList.add('success');
+                warningEl.style.display = 'none';
+            } else {
+                summaryEl.classList.remove('success');
+                summaryEl.classList.add('warning');
+                warningEl.style.display = 'flex';
+                warningEl.textContent = `⚠️ Fix issues before shipping. (${checklistItems.length - passedCount} remaining)`;
             }
         }
 
